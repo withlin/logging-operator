@@ -15,6 +15,8 @@
 package output
 
 import (
+	"encoding/json"
+
 	"github.com/cisco-open/operator-tools/pkg/secret"
 
 	"github.com/kube-logging/logging-operator/pkg/sdk/logging/model/types"
@@ -364,11 +366,12 @@ func (e *KafkaOutputConfig) ToDirective(secretLoader secret.SecretLoader, id str
 		kafka.SubDirectives = append(kafka.SubDirectives, buffer)
 	}
 	if e.RdkafkaOptions != nil {
-		if rdkafkaOptions, err := e.RdkafkaOptions.ToDirective(secretLoader, id); err != nil {
-			return nil, err
-		} else {
-			kafka.SubDirectives = append(kafka.SubDirectives, rdkafkaOptions)
+		rdkafkaJson, err := json.Marshal(&e.RdkafkaOptions)
+		if err != nil{
+			return nil,err
 		}
+		kafka.Params["rdkafka_options"] = string(rdkafkaJson)
+		
 	}
 
 	if e.Format != nil {
@@ -381,6 +384,11 @@ func (e *KafkaOutputConfig) ToDirective(secretLoader secret.SecretLoader, id str
 
 	// remove use_rdkafka from params, it is not a valid parameter for plugin config
 	delete(kafka.Params, "use_rdkafka")
+	delete(kafka.Params, "sasl_over_ssl")
+	delete(kafka.Params, "ssl_ca_cert")
+	delete(kafka.Params, "ssl_client_cert")
+	delete(kafka.Params, "ssl_client_cert_key")
+	delete(kafka.Params, "scram_mechanism")
 	return kafka, nil
 }
 
